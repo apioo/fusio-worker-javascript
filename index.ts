@@ -10,6 +10,8 @@ import {Context} from "./src/Context";
 const app = express();
 const port = 8081;
 
+var connections: Record<string, Config>|null = null;
+
 app.use(express.json());
 
 app.post('/action', (req: express.Request, res: express.Response) => {
@@ -48,6 +50,9 @@ app.post('/connection', (req: express.Request, res: express.Response) => {
     };
 
     fs.writeFileSync(file, JSON.stringify(data));
+
+    // reset connections
+    connections = null;
 
     console.debug('Update connection ' + req.body.name);
 
@@ -96,11 +101,14 @@ app.listen(port, () => {
 });
 
 function readConnections(): Record<string, Config> {
-    const file = './connections.json';
-    let data: Record<string, Config> = {};
-    if (fs.existsSync(file)) {
-        data = JSON.parse(fs.readFileSync(file, 'utf8'))
+    if (connections !== null) {
+        return connections;
     }
 
-    return data;
+    const file = './connections.json';
+    if (fs.existsSync(file)) {
+        connections = JSON.parse(fs.readFileSync(file, 'utf8'))
+    }
+
+    return connections !== null ? connections : {};
 }
