@@ -41,7 +41,7 @@ export class Logger {
         this.log('DEBUG', message, context);
     }
 
-    public log(level: string, message: string, context: any) {
+    private log(level: string, message: string, context: any) {
         this.logs.push({
             level: level,
             message: message,
