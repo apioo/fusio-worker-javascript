@@ -82,9 +82,10 @@ app.post('/execute', (req: express.Request, res: express.Response) => {
     console.debug('Execute action ' + req.body.action);
 
     const file = './action/' + req.body.action + '.js';
-    const action = require(file);
 
     try {
+        const action = require(file);
+
         action(request, context, connector, response, dispatcher, logger);
     } catch (error) {
         res.status(500);
