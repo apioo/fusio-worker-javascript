@@ -42,8 +42,13 @@ export class Connector {
         } else if (config.type === 'Fusio.Adapter.Sql.Connection.SqlAdvanced') {
             return this.connections[name] = createConnection(config.config.url);
         } else if (config.type === 'Fusio.Adapter.Http.Connection.Http') {
+            // @TODO configure proxy for http client
+            //config.config.username
+            //config.config.password
+            //config.config.proxy
+
             return this.connections[name] = axios.create({
-                baseURL: config.config.base_url
+                baseURL: config.config.url
             });
         } else {
             throw new Error('Provided a not supported connection type');
