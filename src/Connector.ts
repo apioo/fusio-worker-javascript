@@ -1,4 +1,3 @@
-
 import axios, {AxiosInstance} from "axios";
 import {Connection, createConnection} from "mysql2";
 

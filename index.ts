@@ -1,11 +1,9 @@
 import * as fs from "fs";
-import Thrift, {TBinaryProtocol, TBufferedTransport} from "thrift";
+import Thrift from "thrift";
 import {Config, Connector} from "./src/Connector";
 import {HttpResponse, Response} from "./src/Response";
 import {Dispatcher} from "./src/Dispatcher";
 import {Logger} from "./src/Logger";
-import {Request} from "./src/Request";
-import {Context} from "./src/Context";
 import {Action, Connection, Execute, Message, Result} from "./generated/worker_types";
 import {Processor} from "./generated/Worker";
 
@@ -65,8 +63,6 @@ var handler : WorkerHandler = {
     },
 
     executeAction: function(execute: Execute, result: Function): void {
-        const request = new Request(execute.request)
-        const context = new Context(execute.context)
         const connector = new Connector(readConnections());
         const dispatcher = new Dispatcher();
         const logger = new Logger();
@@ -89,7 +85,7 @@ var handler : WorkerHandler = {
         try {
             const action = require(file);
 
-            action(request, context, connector, response, dispatcher, logger);
+            action(execute.request, execute.context, connector, response, dispatcher, logger);
         } catch (error) {
             result(null, new Result({
                 response: {
