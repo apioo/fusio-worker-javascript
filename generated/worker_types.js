@@ -66,7 +66,6 @@ Message.prototype.write = function(output) {
     output.writeFieldEnd();
   }
   if (this.message !== null && this.message !== undefined) {
-    console.log('write message', this.message);
     output.writeFieldBegin('message', Thrift.Type.STRING, 2);
     output.writeString(this.message);
     output.writeFieldEnd();

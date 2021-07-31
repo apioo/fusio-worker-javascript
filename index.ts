@@ -91,7 +91,10 @@ var handler : WorkerHandler = {
                 response: {
                     statusCode: 500,
                     headers: {},
-                    body: ''
+                    body: JSON.stringify({
+                        success: false,
+                        message: 'An error occurred at the worker: ' + error
+                    })
                 },
                 events: [],
                 logs: []

@@ -510,10 +510,8 @@ var WorkerProcessor = exports.Processor = function(handler) {
   this._handler = handler;
 };
 WorkerProcessor.prototype.process = function(input, output) {
-  console.log('process', input, output);
   var r = input.readMessageBegin();
   if (this['process_' + r.fname]) {
-    console.log('process_' + r.fname, this['process_' + r.fname]);
     return this['process_' + r.fname].call(this, r.rseqid, input, output);
   } else {
     input.skip(Thrift.Type.STRUCT);
