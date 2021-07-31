@@ -7,7 +7,7 @@ import {Logger} from "./src/Logger";
 import {Action, Connection, Execute, Message, Result} from "./generated/worker_types";
 import {Processor} from "./generated/Worker";
 
-const port = 8081;
+const port = 9091;
 
 var connections: Record<string, Config>|null = null;
 
