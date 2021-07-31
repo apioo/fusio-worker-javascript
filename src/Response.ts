@@ -13,11 +13,11 @@ export class Response {
         this.callback = callback;
     }
 
-    public build(statusCode: number, headers: any, body: any) {
+    public build(statusCode: number, headers: Record<string, string>, body: any) {
         this.callback({
             statusCode: statusCode,
             headers: headers,
-            body: body,
+            body: JSON.stringify(body),
         });
     }
 

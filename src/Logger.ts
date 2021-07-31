@@ -1,9 +1,4 @@
-
-interface Log {
-    level: string,
-    message: string,
-    context: any,
-}
+import {Log} from "../generated/worker_types";
 
 export class Logger {
 
@@ -42,11 +37,10 @@ export class Logger {
     }
 
     private log(level: string, message: string, context: any) {
-        this.logs.push({
+        this.logs.push(new Log({
             level: level,
-            message: message,
-            context: context,
-        });
+            message: message
+        }));
     }
 
     public getLogs() {

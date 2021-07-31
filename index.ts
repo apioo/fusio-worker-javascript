@@ -1,105 +1,113 @@
-import express from "express";
 import * as fs from "fs";
+import Thrift, {TBinaryProtocol, TBufferedTransport} from "thrift";
 import {Config, Connector} from "./src/Connector";
 import {HttpResponse, Response} from "./src/Response";
 import {Dispatcher} from "./src/Dispatcher";
 import {Logger} from "./src/Logger";
 import {Request} from "./src/Request";
 import {Context} from "./src/Context";
+import {Action, Connection, Execute, Message, Result} from "./generated/worker_types";
+import {Processor} from "./generated/Worker";
 
-const app = express();
 const port = 8081;
 
 var connections: Record<string, Config>|null = null;
 
-app.use(express.json());
+interface WorkerHandler {
+    setConnection(connection: Connection, result: Function): void;
+    setAction(action: Action, result: Function): void;
+    executeAction(execute: Execute, result: Function): void;
+}
 
-app.post('/action', (req: express.Request, res: express.Response) => {
-    const dir = './action';
-    if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir);
-    }
+var handler : WorkerHandler = {
+    setConnection: function(connection: Connection, result: Function): void {
+        const file = './connections.json';
+        let data = readConnections();
 
-    if (!req.body.name) {
-        return;
-    }
+        if (!connection.name) {
+            result(null, new Message({success: false, message: 'Provided no connection name'}));
+        }
 
-    const file = dir + '/' + req.body.name + '.js';
-    fs.writeFileSync(file, req.body.code);
+        data[connection.name] = {
+            type: connection.type,
+            config: connection.config,
+        };
 
-    // delete require cache
-    delete require.cache[require.resolve(file)];
+        fs.writeFileSync(file, JSON.stringify(data));
 
-    console.debug('Update action ' + req.body.name);
+        // reset connections
+        connections = null;
 
-    res.status(200);
-    res.json({success: true});
-});
+        console.debug('Update connection ' + connection.name);
 
-app.post('/connection', (req: express.Request, res: express.Response) => {
-    const file = './connections.json';
-    let data = readConnections();
+        result(null, new Message({success: true, message: 'Connection successful updated'}));
+    },
 
-    if (!req.body.name) {
-        return;
-    }
+    setAction: function(action: Action, result: Function): void {
+        const dir = './action';
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir);
+        }
 
-    data[req.body.name] = {
-        type: req.body.type,
-        config: req.body.config,
-    };
+        if (!action.name) {
+            result(null, new Message({success: false, message: 'Provided no action name'}));
+        }
 
-    fs.writeFileSync(file, JSON.stringify(data));
+        const file = dir + '/' + action.name + '.js';
+        fs.writeFileSync(file, action.code);
 
-    // reset connections
-    connections = null;
+        // delete require cache
+        delete require.cache[require.resolve(file)];
 
-    console.debug('Update connection ' + req.body.name);
+        console.debug('Update action ' + action.name);
 
-    res.status(200);
-    res.json({success: true});
-});
+        result(null, new Message({success: true, message: 'Action successful updated'}));
+    },
 
-app.post('/execute', (req: express.Request, res: express.Response) => {
-    const request = new Request(req.body.request)
-    const context = new Context(req.body.context)
-    const connector = new Connector(readConnections());
-    const dispatcher = new Dispatcher();
-    const logger = new Logger();
-    const response = new Response((response: HttpResponse) => {
-        res.status(200);
-        res.json({
-            response: response,
-            events: dispatcher.getEvents(),
-            logs: logger.getLogs(),
+    executeAction: function(execute: Execute, result: Function): void {
+        const request = new Request(execute.request)
+        const context = new Context(execute.context)
+        const connector = new Connector(readConnections());
+        const dispatcher = new Dispatcher();
+        const logger = new Logger();
+        const response = new Response((response: HttpResponse) => {
+            result(null, new Result({
+                response: response,
+                events: dispatcher.getEvents(),
+                logs: logger.getLogs(),
+            }));
         });
-    });
 
-    if (!req.body.action) {
-        return;
-    }
+        if (!execute.action) {
+            return;
+        }
 
-    console.debug('Execute action ' + req.body.action);
+        console.debug('Execute action ' + execute.action);
 
-    const file = './action/' + req.body.action + '.js';
+        const file = './action/' + execute.action + '.js';
 
-    try {
-        const action = require(file);
+        try {
+            const action = require(file);
 
-        action(request, context, connector, response, dispatcher, logger);
-    } catch (error) {
-        res.status(500);
-        res.json({
-            success: false,
-            message: error,
-        });
-    }
-});
+            action(request, context, connector, response, dispatcher, logger);
+        } catch (error) {
+            result(null, new Result({
+                response: {
+                    statusCode: 500,
+                    headers: {},
+                    body: ''
+                },
+                events: [],
+                logs: []
+            }));
+        }
+    },
+};
 
-app.listen(port, () => {
-    console.log('Fusio Worker started');
-    console.log('Server started at http://localhost:' + port);
-});
+var server = Thrift.createServer<Processor, WorkerHandler>(Processor, handler);
+server.listen(port);
+
+console.log('Fusio Worker started');
 
 function readConnections(): Record<string, Config> {
     if (connections !== null) {
