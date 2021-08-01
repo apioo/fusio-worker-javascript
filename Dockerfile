@@ -3,6 +3,8 @@ WORKDIR /app
 COPY ["package.json", "package-lock.json*", "./"]
 RUN npm install
 COPY . .
-RUN npm run build
-EXPOSE 8081
-CMD ["node", "./dist/index.js"]
+RUN node node_modules/.bin/tsc
+RUN node node_modules/.bin/grunt
+EXPOSE 9091
+WORKDIR /app/dist
+CMD ["node", "./index.js"]
