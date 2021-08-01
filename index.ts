@@ -42,7 +42,7 @@ var handler : WorkerHandler = {
     },
 
     setAction: function(action: Action, result: Function): void {
-        const dir = './action';
+        const dir = './actions';
         if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir);
         }
@@ -80,7 +80,7 @@ var handler : WorkerHandler = {
 
         console.debug('Execute action ' + execute.action);
 
-        const file = './action/' + execute.action + '.js';
+        const file = './actions/' + execute.action + '.js';
 
         try {
             const action = require(file);
