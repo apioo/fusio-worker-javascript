@@ -25,3 +25,17 @@ module.exports = function(request, context, connector, response, dispatcher, log
 };
 
 ```
+
+## Types
+
+This table contains an overview which connection types are implemented
+and which implementation is used:
+
+| Type | Implementation |
+| ---- | -------------- |
+| `Fusio.Adapter.Sql.Connection.Sql` | `mysql2`
+| `Fusio.Adapter.Sql.Connection.SqlAdvanced` | `mysql2`
+| `Fusio.Adapter.Http.Connection.Http` | `axios`
+| `Fusio.Adapter.Mongodb.Connection.MongoDB` | `-`
+| `Fusio.Adapter.Elasticsearch.Connection.Elasticsearch` | `-`
+
