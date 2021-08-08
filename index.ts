@@ -7,7 +7,8 @@ import {Logger} from "./src/Logger";
 import {Action, Connection, Execute, Message, Result} from "./generated/worker_types";
 import {Processor} from "./generated/Worker";
 
-const port = 9091;
+const PORT = 9091;
+const ACTION_DIR = './actions';
 
 var connections: Record<string, Config>|null = null;
 
@@ -19,7 +20,7 @@ interface WorkerHandler {
 
 var handler : WorkerHandler = {
     setConnection: function(connection: Connection, result: Function): void {
-        const file = './connections.json';
+        const file = ACTION_DIR + '/connections.json';
         let data = readConnections();
 
         if (!connection.name) {
@@ -42,16 +43,11 @@ var handler : WorkerHandler = {
     },
 
     setAction: function(action: Action, result: Function): void {
-        const dir = './actions';
-        if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir);
-        }
-
         if (!action.name) {
             result(null, new Message({success: false, message: 'Provided no action name'}));
         }
 
-        const file = dir + '/' + action.name + '.js';
+        const file = ACTION_DIR + '/' + action.name + '.js';
         fs.writeFileSync(file, action.code);
 
         // delete require cache
@@ -80,7 +76,7 @@ var handler : WorkerHandler = {
 
         console.debug('Execute action ' + execute.action);
 
-        const file = './actions/' + execute.action + '.js';
+        const file = ACTION_DIR + '/' + execute.action + '.js';
 
         try {
             const action = require(file);
@@ -104,7 +100,7 @@ var handler : WorkerHandler = {
 };
 
 var server = Thrift.createServer<Processor, WorkerHandler>(Processor, handler);
-server.listen(port);
+server.listen(PORT);
 
 console.log('Fusio Worker started');
 
@@ -113,7 +109,7 @@ function readConnections(): Record<string, Config> {
         return connections;
     }
 
-    const file = './connections.json';
+    const file = ACTION_DIR + '/connections.json';
     if (fs.existsSync(file)) {
         connections = JSON.parse(fs.readFileSync(file, 'utf8'))
     }
