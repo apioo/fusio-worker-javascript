@@ -20,7 +20,10 @@ interface WorkerHandler {
 
 var handler : WorkerHandler = {
     setConnection: function(connection: Connection, result: Function): void {
-        const file = ACTION_DIR + '/connections.json';
+        if (!fs.existsSync(ACTION_DIR)){
+            fs.mkdirSync(ACTION_DIR);
+        }
+
         let data = readConnections();
 
         if (!connection.name) {
@@ -32,7 +35,7 @@ var handler : WorkerHandler = {
             config: connection.config,
         };
 
-        fs.writeFileSync(file, JSON.stringify(data));
+        fs.writeFileSync(ACTION_DIR + '/connections.json', JSON.stringify(data));
 
         // reset connections
         connections = null;
@@ -43,6 +46,10 @@ var handler : WorkerHandler = {
     },
 
     setAction: function(action: Action, result: Function): void {
+        if (!fs.existsSync(ACTION_DIR)){
+            fs.mkdirSync(ACTION_DIR);
+        }
+
         if (!action.name) {
             result(null, new Message({success: false, message: 'Provided no action name'}));
         }
