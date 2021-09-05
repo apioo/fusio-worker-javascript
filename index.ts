@@ -11,6 +11,7 @@ const PORT = 9091;
 const ACTION_DIR = './actions';
 
 var connections: Record<string, Config>|null = null;
+var actions: Record<string, Function> = {};
 
 interface WorkerHandler {
     setConnection(connection: Connection, result: Function): void;
@@ -57,6 +58,10 @@ var handler : WorkerHandler = {
         const file = ACTION_DIR + '/' + action.name + '.js';
         fs.writeFileSync(file, action.code);
 
+        if (actions.hasOwnProperty(action.name)) {
+            delete actions[action.name];
+        }
+
         // delete require cache
         delete require.cache[require.resolve(file)];
 
@@ -83,12 +88,12 @@ var handler : WorkerHandler = {
 
         console.debug('Execute action ' + execute.action);
 
-        const file = ACTION_DIR + '/' + execute.action + '.js';
+        if (!actions.hasOwnProperty(execute.action)) {
+            actions[execute.action] = require(ACTION_DIR + '/' + execute.action + '.js');
+        }
 
         try {
-            const action = require(file);
-
-            action(execute.request, execute.context, connector, response, dispatcher, logger);
+            actions[execute.action](execute.request, execute.context, connector, response, dispatcher, logger);
         } catch (error) {
             result(null, new Result({
                 response: {
