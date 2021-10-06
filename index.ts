@@ -11,7 +11,7 @@ const PORT = 9091;
 const ACTION_DIR = './actions';
 
 var connections: Record<string, Config>|null = null;
-var actions: Record<string, Function> = {};
+var actions: Record<string, Promise<Function>> = {};
 
 interface WorkerHandler {
     setConnection(connection: Connection, result: Function): void;
@@ -89,24 +89,19 @@ var handler : WorkerHandler = {
         console.debug('Execute action ' + execute.action);
 
         if (!actions.hasOwnProperty(execute.action)) {
-            actions[execute.action] = require(ACTION_DIR + '/' + execute.action + '.js');
+            actions[execute.action] = Promise.resolve(require(ACTION_DIR + '/' + execute.action + '.js'));
         }
 
         try {
-            actions[execute.action](execute.request, execute.context, connector, response, dispatcher, logger);
+            actions[execute.action]
+                .then(function(callback){
+                    callback(execute.request, execute.context, connector, response, dispatcher, logger)
+                })
+                .catch(function(error){
+                    result(null, newError(error));
+                });
         } catch (error) {
-            result(null, new Result({
-                response: {
-                    statusCode: 500,
-                    headers: {},
-                    body: JSON.stringify({
-                        success: false,
-                        message: 'An error occurred at the worker: ' + error
-                    })
-                },
-                events: [],
-                logs: []
-            }));
+            result(null, newError(error));
         }
     },
 };
@@ -127,4 +122,19 @@ function readConnections(): Record<string, Config> {
     }
 
     return connections !== null ? connections : {};
+}
+
+function newError(error: any): Result {
+    return new Result({
+        response: {
+            statusCode: 500,
+            headers: {},
+            body: JSON.stringify({
+                success: false,
+                message: 'An error occurred at the worker: ' + error
+            })
+        },
+        events: [],
+        logs: []
+    });
 }
