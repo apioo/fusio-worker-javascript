@@ -1,5 +1,8 @@
 import axios, {AxiosInstance} from "axios";
 import {Connection, createConnection} from "mysql2";
+import {MongoClient} from "mongodb";
+import {Client as PgClient} from "pg";
+import {Client as ElasticsearchClient} from "@elastic/elasticsearch";
 
 export interface Config {
     type: string,
@@ -16,7 +19,7 @@ export class Connector {
         this.connections = {};
     }
 
-    public getConnection(name: string): Connection|AxiosInstance {
+    public async getConnection(name: string): Promise<Connection|PgClient|AxiosInstance|MongoClient|ElasticsearchClient> {
         if (this.connections[name]) {
             return this.connections[name];
         }
@@ -35,6 +38,16 @@ export class Connector {
                     password: config.config.password,
                     database: config.config.database
                 });
+            } else if (config.config.type === 'pdo_pgsql') {
+                const client = new PgClient({
+                    user: config.config.username,
+                    password: config.config.password,
+                    host: config.config.host,
+                    database: config.config.database
+                });
+                await client.connect();
+                this.connections[name] = client;
+                return client;
             } else {
                 throw new Error('SQL type is not supported');
             }
@@ -49,6 +62,17 @@ export class Connector {
             return this.connections[name] = axios.create({
                 baseURL: config.config.url
             });
+        } else if (config.type === 'Fusio.Adapter.Mongodb.Connection.MongoDB') {
+            const client = new MongoClient(config.config.url);
+            await client.connect();
+
+            return this.connections[name] = client;
+        } else if (config.type === 'Fusio.Adapter.Elasticsearch.Connection.Elasticsearch') {
+            const client = new ElasticsearchClient({
+                nodes: config.config.host.split(',')
+            });
+
+            return this.connections[name] = client;
         } else {
             throw new Error('Provided a not supported connection type');
         }

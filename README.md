@@ -33,9 +33,9 @@ and which implementation is used:
 
 | Type | Implementation |
 | ---- | -------------- |
-| `Fusio.Adapter.Sql.Connection.Sql` | `mysql2`
-| `Fusio.Adapter.Sql.Connection.SqlAdvanced` | `mysql2`
+| `Fusio.Adapter.Sql.Connection.Sql` | `mysql2 / pg`
+| `Fusio.Adapter.Sql.Connection.SqlAdvanced` | `mysql2 / pg`
 | `Fusio.Adapter.Http.Connection.Http` | `axios`
-| `Fusio.Adapter.Mongodb.Connection.MongoDB` | `-`
-| `Fusio.Adapter.Elasticsearch.Connection.Elasticsearch` | `-`
+| `Fusio.Adapter.Mongodb.Connection.MongoDB` | `mongoose`
+| `Fusio.Adapter.Elasticsearch.Connection.Elasticsearch` | `@elastic/elasticsearch`
 
