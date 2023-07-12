@@ -1,5 +1,5 @@
 import axios, {AxiosInstance} from "axios";
-import {Connection, createConnection} from "mysql2";
+import {Connection, createConnection} from "mysql2/promise";
 import {MongoClient} from "mongodb";
 import {Client as PgClient} from "pg";
 import {Client as ElasticsearchClient} from "@elastic/elasticsearch";
