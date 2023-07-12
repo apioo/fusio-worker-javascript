@@ -70,7 +70,7 @@ var handler : WorkerHandler = {
         result(null, new Message({success: true, message: 'Action successful updated'}));
     },
 
-    executeAction: function(execute: Execute, result: Function): void {
+    executeAction: async function(execute: Execute, result: Function): Promise<void> {
         const connector = new Connector(readConnections());
         const dispatcher = new Dispatcher();
         const logger = new Logger();
@@ -88,18 +88,17 @@ var handler : WorkerHandler = {
 
         console.debug('Execute action ' + execute.action);
 
-        if (!actions.hasOwnProperty(execute.action)) {
-            actions[execute.action] = Promise.resolve(require(ACTION_DIR + '/' + execute.action + '.js'));
-        }
-
         try {
-            actions[execute.action]
-                .then(function(callback){
-                    callback(execute.request, execute.context, connector, response, dispatcher, logger)
-                })
-                .catch(function(error){
-                    result(null, newError(error));
-                });
+            if (!actions.hasOwnProperty(execute.action)) {
+                actions[execute.action] = Promise.resolve(require(ACTION_DIR + '/' + execute.action + '.js'));
+            }
+
+            const callback = await actions[execute.action];
+            if (typeof callback === 'function') {
+                await callback(execute.request, execute.context, connector, response, dispatcher, logger)
+            } else {
+                throw new Error('Module does not export a function');
+            }
         } catch (error) {
             result(null, newError(error));
         }
