@@ -85,7 +85,7 @@ export class Worker {
     }
 
     public getActionFile(action: string): string {
-        if (!action.match(/^[A-Za-z0-9_]{3,30}$/)) {
+        if (!action.match(/^[A-Za-z0-9_-]{3,30}$/)) {
             throw new Error('Provided no valid action name');
         }
 
