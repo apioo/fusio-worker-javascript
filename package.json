@@ -21,19 +21,15 @@
     "@elastic/elasticsearch": "7.17.0",
     "axios": "^1.4",
     "buffer": "^6.0",
+    "express": "^4.19.1",
     "mongodb": "^5.7",
     "mysql2": "^3.5",
-    "node-int64": "^0.4",
-    "pg": "^8.11",
-    "thrift": "^0.18"
+    "pg": "^8.11"
   },
   "devDependencies": {
+    "@types/express": "^4.17.21",
     "@types/node": "^20.4",
     "@types/pg": "^8.10",
-    "@types/thrift": "^0.10",
-    "grunt": "^1.6",
-    "grunt-cli": "^1.4",
-    "grunt-contrib-copy": "^1.0",
     "typescript": "^5.1"
   }
 }

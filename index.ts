@@ -1,139 +1,49 @@
-import * as fs from "fs";
-import Thrift from "thrift";
-import {Config, Connector} from "./src/Connector";
-import {HttpResponse, Response} from "./src/Response";
-import {Dispatcher} from "./src/Dispatcher";
-import {Logger} from "./src/Logger";
-import {Action, Connection, Execute, Message, Result} from "./generated/worker_types";
-import {Processor} from "./generated/Worker";
+import express, {Express, NextFunction, Request, Response} from "express";
+import {json} from "body-parser";
+import {Worker} from "./src/Worker";
+import {Message} from "./src/generated/Message";
 
-const PORT = 9091;
-const ACTION_DIR = './actions';
+const app: Express = express();
+const port = process.env.PORT || 9091;
+const worker = new Worker();
 
-var connections: Record<string, Config>|null = null;
-var actions: Record<string, Promise<Function>> = {};
+const errorHandler = (err: Error, req: Request, res: Response, next: NextFunction) => {
+    const message: Message = {
+        success: false,
+        message: err.message,
+        trace: err.stack
+    };
 
-interface WorkerHandler {
-    setConnection(connection: Connection, result: Function): void;
-    setAction(action: Action, result: Function): void;
-    executeAction(execute: Execute, result: Function): void;
-}
-
-var handler : WorkerHandler = {
-    setConnection: function(connection: Connection, result: Function): void {
-        if (!fs.existsSync(ACTION_DIR)){
-            fs.mkdirSync(ACTION_DIR);
-        }
-
-        let data = readConnections();
-
-        if (!connection.name) {
-            result(null, new Message({success: false, message: 'Provided no connection name'}));
-        }
-
-        data[connection.name] = {
-            type: connection.type,
-            config: connection.config,
-        };
-
-        fs.writeFileSync(ACTION_DIR + '/connections.json', JSON.stringify(data));
-
-        // reset connections
-        connections = null;
-
-        console.debug('Update connection ' + connection.name);
-
-        result(null, new Message({success: true, message: 'Connection successful updated'}));
-    },
-
-    setAction: function(action: Action, result: Function): void {
-        if (!fs.existsSync(ACTION_DIR)){
-            fs.mkdirSync(ACTION_DIR);
-        }
-
-        if (!action.name) {
-            result(null, new Message({success: false, message: 'Provided no action name'}));
-        }
-
-        const file = ACTION_DIR + '/' + action.name + '.js';
-        fs.writeFileSync(file, action.code);
-
-        if (actions.hasOwnProperty(action.name)) {
-            delete actions[action.name];
-        }
-
-        // delete require cache
-        delete require.cache[require.resolve(file)];
-
-        console.debug('Update action ' + action.name);
-
-        result(null, new Message({success: true, message: 'Action successful updated'}));
-    },
-
-    executeAction: async function(execute: Execute, result: Function): Promise<void> {
-        const connector = new Connector(readConnections());
-        const dispatcher = new Dispatcher();
-        const logger = new Logger();
-        const response = new Response((response: HttpResponse) => {
-            result(null, new Result({
-                response: response,
-                events: dispatcher.getEvents(),
-                logs: logger.getLogs(),
-            }));
-        });
-
-        if (!execute.action) {
-            return;
-        }
-
-        console.debug('Execute action ' + execute.action);
-
-        try {
-            if (!actions.hasOwnProperty(execute.action)) {
-                actions[execute.action] = Promise.resolve(require(ACTION_DIR + '/' + execute.action + '.js'));
-            }
-
-            const callback = await actions[execute.action];
-            if (typeof callback === 'function') {
-                await callback(execute.request, execute.context, connector, response, dispatcher, logger)
-            } else {
-                throw new Error('Module does not export a function');
-            }
-        } catch (error) {
-            result(null, newError(error));
-        }
-    },
+    res.status(500).send(message);
 };
 
-var server = Thrift.createServer<Processor, WorkerHandler>(Processor, handler);
-server.listen(PORT);
+app.use(json());
+app.use(errorHandler);
 
-console.log('Fusio Worker started');
+app.get("/", async (req: Request, res: Response) => {
+    const about = await worker.get();
 
-function readConnections(): Record<string, Config> {
-    if (connections !== null) {
-        return connections;
-    }
+    res.send(about);
+});
 
-    const file = ACTION_DIR + '/connections.json';
-    if (fs.existsSync(file)) {
-        connections = JSON.parse(fs.readFileSync(file, 'utf8'))
-    }
+app.post("/:action", async (req: Request, res: Response) => {
+    const respone = await worker.execute(req.params.action, req.body);
 
-    return connections !== null ? connections : {};
-}
+    res.send(respone);
+});
 
-function newError(error: any): Result {
-    return new Result({
-        response: {
-            statusCode: 500,
-            headers: {},
-            body: JSON.stringify({
-                success: false,
-                message: 'An error occurred at the worker: ' + error
-            })
-        },
-        events: [],
-        logs: []
-    });
-}
+app.put("/:action", (req: Request, res: Response) => {
+    const response = worker.put(req.params.action, req.body);
+
+    res.send(response);
+});
+
+app.delete("/:action", (req: Request, res: Response) => {
+    const response = worker.delete(req.params.action);
+
+    res.send(response);
+});
+
+app.listen(port, () => {
+    console.log(`Fusio Worker started on port ${port}`);
+});

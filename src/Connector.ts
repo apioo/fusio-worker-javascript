@@ -3,18 +3,14 @@ import {Connection, createConnection} from "mysql2/promise";
 import {MongoClient} from "mongodb";
 import {Client as PgClient} from "pg";
 import {Client as ElasticsearchClient} from "@elastic/elasticsearch";
-
-export interface Config {
-    type: string,
-    config: any,
-}
+import {ExecuteConnection} from "./generated/ExecuteConnection";
 
 export class Connector {
 
-    private configs: Record<string, Config>;
+    private configs: Record<string, ExecuteConnection>;
     private connections: Record<string, any>;
 
-    public constructor(configs: Record<string, Config>) {
+    public constructor(configs: Record<string, ExecuteConnection>) {
         this.configs = configs;
         this.connections = {};
     }
@@ -28,22 +24,23 @@ export class Connector {
             throw new Error('Connection does not exist');
         }
 
-        const config = this.configs[name];
+        const connection = this.configs[name];
+        const config = JSON.parse(Buffer.from(connection.config || '', 'base64').toString());
 
-        if (config.type === 'Fusio.Adapter.Sql.Connection.Sql') {
-            if (config.config.type === 'pdo_mysql') {
+        if (connection.type === 'Fusio.Adapter.Sql.Connection.Sql') {
+            if (config.type === 'pdo_mysql') {
                 return this.connections[name] = createConnection({
-                    host: config.config.host,
-                    user: config.config.username,
-                    password: config.config.password,
-                    database: config.config.database
+                    host: config.host,
+                    user: config.username,
+                    password: config.password,
+                    database: config.database
                 });
-            } else if (config.config.type === 'pdo_pgsql') {
+            } else if (config.type === 'pdo_pgsql') {
                 const client = new PgClient({
-                    user: config.config.username,
-                    password: config.config.password,
-                    host: config.config.host,
-                    database: config.config.database
+                    user: config.username,
+                    password: config.password,
+                    host: config.host,
+                    database: config.database
                 });
                 await client.connect();
                 this.connections[name] = client;
@@ -51,25 +48,25 @@ export class Connector {
             } else {
                 throw new Error('SQL type is not supported');
             }
-        } else if (config.type === 'Fusio.Adapter.Sql.Connection.SqlAdvanced') {
-            return this.connections[name] = createConnection(config.config.url);
-        } else if (config.type === 'Fusio.Adapter.Http.Connection.Http') {
+        } else if (connection.type === 'Fusio.Adapter.Sql.Connection.SqlAdvanced') {
+            return this.connections[name] = createConnection(config.url);
+        } else if (connection.type === 'Fusio.Adapter.Http.Connection.Http') {
             // @TODO configure proxy for http client
-            //config.config.username
-            //config.config.password
-            //config.config.proxy
+            //config.username
+            //config.password
+            //config.proxy
 
             return this.connections[name] = axios.create({
-                baseURL: config.config.url
+                baseURL: config.url
             });
-        } else if (config.type === 'Fusio.Adapter.Mongodb.Connection.MongoDB') {
-            const client = new MongoClient(config.config.url);
+        } else if (connection.type === 'Fusio.Adapter.Mongodb.Connection.MongoDB') {
+            const client = new MongoClient(config.url);
             await client.connect();
 
             return this.connections[name] = client;
-        } else if (config.type === 'Fusio.Adapter.Elasticsearch.Connection.Elasticsearch') {
+        } else if (connection.type === 'Fusio.Adapter.Elasticsearch.Connection.Elasticsearch') {
             const client = new ElasticsearchClient({
-                nodes: config.config.host.split(',')
+                nodes: config.host.split(',')
             });
 
             return this.connections[name] = client;

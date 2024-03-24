@@ -1,14 +1,16 @@
-import {Event} from "../generated/worker_types";
+import {ResponseEvent} from "./generated/ResponseEvent";
 
 export class Dispatcher {
 
-    private events: Array<Event> = [];
+    private events: Array<ResponseEvent> = [];
 
     public dispatch(eventName: string, payload: any) {
-        this.events.push(new Event({
+        const event: ResponseEvent = {
             eventName: eventName,
             data: JSON.stringify(payload)
-        }));
+        };
+
+        this.events.push(event);
     }
 
     public getEvents() {

@@ -1,8 +1,8 @@
-import {Log} from "../generated/worker_types";
+import {ResponseLog} from "./generated/ResponseLog";
 
 export class Logger {
 
-    private logs: Array<Log> = []
+    private logs: Array<ResponseLog> = []
 
     public emergency(message: string, context: any) {
         this.log('EMERGENCY', message, context);
@@ -37,10 +37,12 @@ export class Logger {
     }
 
     private log(level: string, message: string, context: any) {
-        this.logs.push(new Log({
+        const log: ResponseLog = {
             level: level,
             message: message
-        }));
+        };
+
+        this.logs.push(log);
     }
 
     public getLogs() {
