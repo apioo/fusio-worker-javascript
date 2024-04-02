@@ -7,7 +7,41 @@ const app: Express = express();
 const port = process.env.PORT || 9091;
 const worker = new Worker();
 
-const errorHandler = (err: Error, req: Request, res: Response, next: NextFunction) => {
+app.use(json());
+
+app.get("/", async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        res.json(await worker.get());
+    } catch (error) {
+        next(error);
+    }
+});
+
+app.post("/:action", async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        res.json(await worker.execute(req.params.action, req.body));
+    } catch (error) {
+        next(error);
+    }
+});
+
+app.put("/:action", async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        res.json(await worker.put(req.params.action, req.body));
+    } catch (error) {
+        next(error);
+    }
+});
+
+app.delete("/:action", async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        res.json(await worker.delete(req.params.action));
+    } catch (error) {
+        next(error);
+    }
+});
+
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
     const message: Message = {
         success: false,
         message: err.message,
@@ -15,33 +49,6 @@ const errorHandler = (err: Error, req: Request, res: Response, next: NextFunctio
     };
 
     res.status(500).send(message);
-};
-
-app.use(json());
-app.use(errorHandler);
-
-app.get("/", async (req: Request, res: Response) => {
-    const about = await worker.get();
-
-    res.send(about);
-});
-
-app.post("/:action", async (req: Request, res: Response) => {
-    const respone = await worker.execute(req.params.action, req.body);
-
-    res.send(respone);
-});
-
-app.put("/:action", (req: Request, res: Response) => {
-    const response = worker.put(req.params.action, req.body);
-
-    res.send(response);
-});
-
-app.delete("/:action", (req: Request, res: Response) => {
-    const response = worker.delete(req.params.action);
-
-    res.send(response);
 });
 
 app.listen(port, () => {

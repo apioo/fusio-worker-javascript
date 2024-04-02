@@ -8,13 +8,10 @@ import {Dispatcher} from "./Dispatcher";
 import {Logger} from "./Logger";
 import {ResponseBuilder} from "./ResponseBuilder";
 import {Message} from "./generated/Message";
-import {ResponseHTTP} from "./generated/ResponseHTTP";
 
 export class Worker {
 
-    private static ACTION_DIR = './actions';
-
-    private actions: Record<string, Promise<Function>> = {};
+    private static ACTION_DIR = __dirname + '/actions';
 
     public async get(): Promise<About> {
         return {
@@ -29,17 +26,16 @@ export class Worker {
         const logger = new Logger();
         const responseBuilder = new ResponseBuilder();
 
-        if (!this.actions.hasOwnProperty(action)) {
-            const file = this.getActionFile(action);
-            this.actions[action] = Promise.resolve(require(file));
-        }
+        const file = this.getActionFile(action);
+        const callback = await Promise.resolve(require(file));
 
-        const callback = await this.actions[action];
         if (typeof callback !== 'function') {
             throw new Error('Provided action does not return a function');
         }
 
-        let response = await callback(payload.request, payload.context, connector, responseBuilder, dispatcher, logger)
+        await callback(payload.request, payload.context, connector, responseBuilder, dispatcher, logger);
+
+        let response = responseBuilder.getResponse();
         if (!response) {
             response = {
                 statusCode: 204
@@ -63,7 +59,7 @@ export class Worker {
 
         fs.writeFileSync(file, code);
 
-        this.resetCache(action, file);
+        this.resetCache(file);
 
         return this.newMessage(true, 'Action successfully updated');
     }
@@ -79,7 +75,7 @@ export class Worker {
             fs.unlinkSync(file);
         }
 
-        this.resetCache(action, file);
+        this.resetCache(file);
 
         return this.newMessage(true, 'Action successfully deleted');
     }
@@ -99,12 +95,14 @@ export class Worker {
         }
     }
 
-    private resetCache(action: string, file: string): void {
-        if (this.actions.hasOwnProperty(action)) {
-            delete this.actions[action];
+    private resetCache(file: string): void {
+        try {
+            const path = require.resolve(file);
+            if (require.cache[path]) {
+                delete require.cache[path];
+            }
+        } catch (error) {
         }
-
-        delete require.cache[require.resolve(file)];
     }
 }
 

@@ -1,0 +1,8 @@
+{
+  "type": "model-typescript",
+  "require": {
+    "fusio/worker": {
+      "target": "./src/generated"
+    }
+  }
+}
