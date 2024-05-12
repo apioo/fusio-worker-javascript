@@ -1,52 +1,27 @@
-import {About} from "./generated/About";
-import {Execute} from "./generated/Execute";
-import {Response} from "./generated/Response";
-import {Update} from "./generated/Update";
 import fs from "fs";
-import {Connector} from "./Connector";
-import {Dispatcher} from "./Dispatcher";
-import {Logger} from "./Logger";
-import {ResponseBuilder} from "./ResponseBuilder";
-import {Message} from "./generated/Message";
+import {Runtime} from "fusio-worker-runtime/dist/Runtime";
+import {About} from "fusio-worker-runtime/dist/generated/About";
+import {Execute} from "fusio-worker-runtime/dist/generated/Execute";
+import {Response} from "fusio-worker-runtime/dist/generated/Response";
+import {Update} from "fusio-worker-runtime/dist/generated/Update";
+import {Message} from "fusio-worker-runtime/dist/generated/Message";
 
 export class Worker {
 
     private static ACTION_DIR = __dirname + '/actions';
 
+    private runtime: Runtime;
+
+    public constructor() {
+        this.runtime = new Runtime();
+    }
+
     public async get(): Promise<About> {
-        return {
-            apiVersion: "1.0.0",
-            language: "javascript"
-        };
+        return this.runtime.get();
     }
 
     public async execute(action: string, payload: Execute): Promise<Response> {
-        const connector = new Connector(payload.connections || {});
-        const dispatcher = new Dispatcher();
-        const logger = new Logger();
-        const responseBuilder = new ResponseBuilder();
-
-        const file = this.getActionFile(action);
-        const callback = await Promise.resolve(require(file));
-
-        if (typeof callback !== 'function') {
-            throw new Error('Provided action does not return a function');
-        }
-
-        await callback(payload.request, payload.context, connector, responseBuilder, dispatcher, logger);
-
-        let response = responseBuilder.getResponse();
-        if (!response) {
-            response = {
-                statusCode: 204
-            };
-        }
-
-        return {
-            events: dispatcher.getEvents(),
-            logs: logger.getLogs(),
-            response: response,
-        };
+        return this.runtime.run(this.getActionFile(action), payload);
     }
 
     public async put(action: string, payload: Update): Promise<Message> {
@@ -105,5 +80,3 @@ export class Worker {
         }
     }
 }
-
-

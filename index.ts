@@ -1,7 +1,7 @@
 import express, {Express, NextFunction, Request, Response} from "express";
 import {json} from "body-parser";
 import {Worker} from "./src/Worker";
-import {Message} from "./src/generated/Message";
+import {Message} from "fusio-worker-runtime/dist/generated/Message";
 
 const app: Express = express();
 const port = process.env.PORT || 9091;
