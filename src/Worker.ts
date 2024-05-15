@@ -8,7 +8,7 @@ import {Message} from "fusio-worker-runtime/dist/generated/Message";
 
 export class Worker {
 
-    private static ACTION_DIR = __dirname + '/actions';
+    private static ACTION_DIR = __dirname + '/../actions';
 
     private runtime: Runtime;
 
