@@ -1,6 +1,5 @@
 {
   "name": "fusio-worker",
-  "version": "1.0.1",
   "description": "Fusio worker implementation to build actions in Javascript",
   "keywords": [
     "API",
