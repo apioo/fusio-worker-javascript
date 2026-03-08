@@ -65,8 +65,9 @@ export class Worker {
             hash = action.substring(pos + 1);
         }
 
-        if (!action.match(/^[A-Za-z0-9_-]{3,255}$/)) {
-            throw new Error('Provided no valid action name');
+        this.assertAction(name);
+        if (hash) {
+            this.assertHash(hash);
         }
 
         let baseDir = Worker.ACTION_DIR + '/' + name;
@@ -80,6 +81,18 @@ export class Worker {
         }
 
         return baseDir + '/' + fileName + '.js';
+    }
+
+    private assertAction(name: string): void {
+        if (!name || !name.match(/^[A-Za-z0-9_-]{3,255}$/)) {
+            throw new Error('Provided no valid action name');
+        }
+    }
+
+    private assertHash(hash: string): void {
+        if (!hash || !hash.match(/^[A-Za-z0-9]{3,255}$/)) {
+            throw new Error('Provided no valid action hash');
+        }
     }
 
     private newMessage(success: boolean, message: string): Message {
