@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM node:24-alpine
 WORKDIR /worker
 COPY ["package.json", "package-lock.json", "./"]
 RUN npm install
