@@ -56,11 +56,30 @@ export class Worker {
     }
 
     public getActionFile(action: string): string {
+        let name = action;
+        let hash = null;
+
+        let pos = action.indexOf('@');
+        if (pos !== -1) {
+            name = action.substring(0, pos);
+            hash = action.substring(pos + 1);
+        }
+
         if (!action.match(/^[A-Za-z0-9_-]{3,255}$/)) {
             throw new Error('Provided no valid action name');
         }
 
-        return Worker.ACTION_DIR + '/' + action + '.js';
+        let baseDir = Worker.ACTION_DIR + '/' + name;
+        if (!fs.existsSync(baseDir)){
+            fs.mkdirSync(baseDir);
+        }
+
+        let fileName = 'main';
+        if (hash) {
+            fileName = hash;
+        }
+
+        return baseDir + '/' + fileName + '.js';
     }
 
     private newMessage(success: boolean, message: string): Message {
