@@ -17,7 +17,7 @@
     "build": "tsc"
   },
   "dependencies": {
-    "express": "^4.19.1",
+    "express": "^5.0.0",
     "fusio-worker-runtime": "^0.1.2"
   },
   "devDependencies": {
